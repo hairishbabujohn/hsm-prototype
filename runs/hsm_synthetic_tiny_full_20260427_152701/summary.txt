@@ -1,4 +1,0 @@
-mode=full
-final_acc=0.0312
-best_acc=0.0000
-steps=5
