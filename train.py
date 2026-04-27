@@ -80,7 +80,7 @@ def train(args):
     # Setup run directory
     if args.run_dir is None:
         config_stem = Path(args.config).stem
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:22]  # microseconds to avoid collisions
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")  # full microseconds to avoid collisions
         run_dir = os.path.join("runs", f"{config_stem}_{args.mode}_{ts}")
     else:
         run_dir = args.run_dir

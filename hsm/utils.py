@@ -30,6 +30,7 @@ class Logger:
         self._writer = None
         self._csv_file = None
         self._fields = None
+        self._rows = []
         self.use_wandb = use_wandb
         self.use_tb = use_tb
 
@@ -55,19 +56,27 @@ class Logger:
             self._wandb = None
 
     def log(self, metrics: dict, step: int):
-        # CSV
+        # CSV - accumulate all rows in memory and rewrite when new fields appear
         if self._fields is None:
             self._fields = ["step"] + sorted(metrics.keys())
-            self._csv_file = open(self.csv_path, "w", newline="")
-            self._writer = csv.DictWriter(self._csv_file, fieldnames=self._fields)
-            self._writer.writeheader()
+            self._rows = []
+
+        new_keys = [k for k in metrics if k not in self._fields]
+        if new_keys:
+            self._fields = self._fields + sorted(new_keys)
 
         row = {"step": step, **metrics}
-        # Fill missing fields
-        for f in self._fields:
-            if f not in row:
-                row[f] = ""
-        self._writer.writerow(row)
+        self._rows.append(row)
+
+        # Rewrite CSV from scratch to handle dynamic fieldnames
+        if self._csv_file is not None:
+            self._csv_file.close()
+        self._csv_file = open(self.csv_path, "w", newline="")
+        self._writer = csv.DictWriter(self._csv_file, fieldnames=self._fields, extrasaction="ignore")
+        self._writer.writeheader()
+        for r in self._rows:
+            filled = {f: r.get(f, "") for f in self._fields}
+            self._writer.writerow(filled)
         self._csv_file.flush()
 
         if self._tb_writer is not None:

@@ -31,31 +31,22 @@ def homeostatic_loss(
     Returns:
         total_loss, reg_loss, metrics dict
     """
-    if mode == "no_reg" or len(all_gates) == 0:
-        zero = torch.zeros(1, device=task_loss.device)
+    zero = torch.zeros(1, device=task_loss.device)
+
+    if len(all_gates) == 0:
         return task_loss, zero, {}
 
-    # Aggregate gates across layers
+    # Aggregate gates across layers - always compute metrics
     g_l_list, g_g_list, g_s_list = [], [], []
     for gates in all_gates:
         g_l_list.append(gates[..., 0])
         g_g_list.append(gates[..., 1])
         g_s_list.append(gates[..., 2])
 
-    g_l = torch.stack(g_l_list, dim=0).mean()   # scalar avg across layers, B, N
+    g_l = torch.stack(g_l_list, dim=0).mean()
     g_g = torch.stack(g_g_list, dim=0).mean()
     g_s = torch.stack(g_s_list, dim=0).mean()
-
-    # util = mean(g_l + g_g)
     util = (torch.stack(g_l_list, dim=0) + torch.stack(g_g_list, dim=0)).mean()
-
-    reg = (
-        lambda_ * g_g
-        + mu * (util - tau) ** 2
-        + nu * F.relu(g_min - g_g) ** 2
-    )
-
-    total_loss = task_loss + reg
 
     metrics = {
         "util": util.item(),
@@ -64,6 +55,16 @@ def homeostatic_loss(
         "mean_g_s": g_s.item(),
     }
 
+    if mode == "no_reg":
+        return task_loss, zero, metrics
+
+    reg = (
+        lambda_ * g_g
+        + mu * (util - tau) ** 2
+        + nu * F.relu(g_min - g_g) ** 2
+    )
+
+    total_loss = task_loss + reg
     return total_loss, reg, metrics
 
 

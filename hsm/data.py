@@ -61,9 +61,9 @@ def bracket_matching_dataset(
     # ---- Balanced sequences via Cycle Lemma ----
     # For any permutation of half_n opens + half_n closes, rotating to start
     # right after the position of the minimum prefix sum yields a valid Dyck word.
-    base = np.concatenate([np.zeros(half_n, dtype=np.int64),
+    open_close_pattern = np.concatenate([np.zeros(half_n, dtype=np.int64),
                             np.ones(seq_len - half_n, dtype=np.int64)])
-    balanced_seqs = np.tile(base, (half, 1))
+    balanced_seqs = np.tile(open_close_pattern, (half, 1))
     for i in range(half):
         rng.shuffle(balanced_seqs[i])
     delta = balanced_seqs * (-2) + 1

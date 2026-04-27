@@ -58,17 +58,18 @@ def summarize_run(run_dir: str) -> dict:
     csv_path = os.path.join(run_dir, "metrics.csv")
     rows = read_csv_metrics(csv_path)
     if rows:
-        # Find best val_acc
+        # Find best/final val_acc (either from val_acc column or final_acc column)
         val_accs = [float(r["val_acc"]) for r in rows if r.get("val_acc") not in ("", None)]
+        final_accs = [float(r["final_acc"]) for r in rows if r.get("final_acc") not in ("", None)]
         if val_accs:
             summary["max_acc"] = max(val_accs)
             summary["final_acc"] = val_accs[-1]
+        elif final_accs:
+            summary["final_acc"] = final_accs[-1]
 
-        # Compute mean gate stats from last 20% of training steps
-        n = len(rows)
-        tail = rows[int(n * 0.8):]
+        # Compute mean gate stats from all training rows (rows that have the key non-empty)
         for key in ["mean_g_g", "mean_g_s", "gate_entropy", "util"]:
-            vals = [float(r[key]) for r in tail if r.get(key) not in ("", None)]
+            vals = [float(r[key]) for r in rows if r.get(key) not in ("", None)]
             if vals:
                 summary[key] = sum(vals) / len(vals)
 
